@@ -7,7 +7,8 @@ d'Instagram (images du dossier images/ de ce dépôt public, légende + hashtags
 Chaque post publié est noté dans publies.json : il n'est jamais publié deux fois, et l'app le coche toute seule.
 
 Secrets GitHub (Settings › Secrets and variables › Actions) :
-  IG_TOKEN    jeton d'accès Instagram (API Instagram avec connexion Instagram)
+  IG_TOKEN    token d'accès (API Instagram avec connexion unifiée, token système sans expiration)
+  IG_USER_ID  identifiant du compte Instagram eliterecovery.ch (affiché à côté du token)
 Variables facultatives :
   IG_PAUSE    « oui » pour mettre le robot en pause sans rien supprimer
 """
@@ -16,7 +17,9 @@ from zoneinfo import ZoneInfo
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 TZ = ZoneInfo("Europe/Zurich")
-API = "https://graph.instagram.com/v25.0"
+# Connexion unifiée (nouvelles apps Meta) : token système qui n'expire jamais, sur graph.facebook.com
+API = os.environ.get("IG_API", "https://graph.facebook.com/v25.0")
+IG = os.environ.get("IG_USER_ID", "").strip() or "17841480660654060"  # eliterecovery.ch
 DEPOT = os.environ.get("GITHUB_REPOSITORY", "eliterecovery/instagram")
 IMAGES = f"https://raw.githubusercontent.com/{DEPOT}/main/images/"
 TOKEN = os.environ.get("IG_TOKEN", "").strip()
@@ -54,7 +57,7 @@ def deja_en_ligne(post):
     """Évite le doublon si le post a déjà été publié à la main depuis l'app."""
     debut = post["l"].strip()[:60]
     try:
-        r = appel("GET", "me/media", fields="caption,timestamp", limit=12)
+        r = appel("GET", f"{IG}/media", fields="caption,timestamp", limit=12)
     except Exception:
         return None
     for m in r.get("data", []):
@@ -67,17 +70,17 @@ def publier(post):
     legende = (post["l"].strip() + "\n\n" + post["g"].strip()).strip()
     noms = post["i"]
     if len(noms) == 1:
-        c = appel("POST", "me/media", image_url=IMAGES + urllib.parse.quote(noms[0]), caption=legende)["id"]
+        c = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(noms[0]), caption=legende)["id"]
         attendre(c)
     else:
         enfants = []
         for n in noms[:10]:
-            e = appel("POST", "me/media", image_url=IMAGES + urllib.parse.quote(n), is_carousel_item="true")["id"]
+            e = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(n), is_carousel_item="true")["id"]
             attendre(e)
             enfants.append(e)
-        c = appel("POST", "me/media", media_type="CAROUSEL", children=",".join(enfants), caption=legende)["id"]
+        c = appel("POST", f"{IG}/media", media_type="CAROUSEL", children=",".join(enfants), caption=legende)["id"]
         attendre(c)
-    return appel("POST", "me/media_publish", creation_id=c)["id"]
+    return appel("POST", f"{IG}/media_publish", creation_id=c)["id"]
 
 
 def main():
@@ -112,8 +115,8 @@ def main():
 
 def rafraichir():
     """Prolonge le jeton de 60 jours (lancé chaque lundi)."""
-    if not TOKEN:
-        print("Pas de jeton : rien à prolonger.")
+    if not TOKEN or "graph.facebook.com" in API:
+        print("Token système de la connexion unifiée : il n'expire pas, rien à prolonger.")
         return
     r = urllib.request.urlopen(f"https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token={TOKEN}", timeout=60)
     j = json.loads(r.read().decode())

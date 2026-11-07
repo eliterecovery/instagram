@@ -36,6 +36,7 @@ jobs:
         if: github.event.schedule != '7 6 * * 1'
         env:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_PAUSE: ${{ vars.IG_PAUSE }}
         run: python3 publier.py
       - name: Noter ce qui a été publié
