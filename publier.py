@@ -22,6 +22,7 @@ API = os.environ.get("IG_API", "https://graph.facebook.com/v25.0")
 IG = os.environ.get("IG_USER_ID", "").strip() or "17841480660654060"  # eliterecovery.ch
 DEPOT = os.environ.get("GITHUB_REPOSITORY", "eliterecovery/instagram")
 IMAGES = f"https://raw.githubusercontent.com/{DEPOT}/main/images/"
+STORIES = f"https://raw.githubusercontent.com/{DEPOT}/main/stories/"
 TOKEN = os.environ.get("IG_TOKEN", "").strip()
 ESSAI = "--essai" in sys.argv or not TOKEN
 
@@ -83,6 +84,22 @@ def publier(post):
     return appel("POST", f"{IG}/media_publish", creation_id=c)["id"]
 
 
+def publier_story(post):
+    """Story qui annonce le post (stories/<date>_story.jpg). Un échec ne bloque pas le post."""
+    if os.environ.get("IG_STORY", "oui").lower() in ("non", "no", "0"):
+        return None
+    nom = f"{post['d']}_story.jpg"
+    if not os.path.exists(os.path.join(ICI, "stories", nom)):
+        return None
+    try:
+        c = appel("POST", f"{IG}/media", image_url=STORIES + nom, media_type="STORIES")["id"]
+        attendre(c)
+        return appel("POST", f"{IG}/media_publish", creation_id=c)["id"]
+    except Exception as e:
+        print("Story non publiée :", e)
+        return None
+
+
 def main():
     if os.environ.get("IG_PAUSE", "").lower() in ("oui", "yes", "1"):
         print("Robot en pause (variable IG_PAUSE).")
@@ -100,7 +117,7 @@ def main():
         return
     for p in a_faire:
         if ESSAI:
-            print(f"[ESSAI, sans jeton] Je publierais : {p['d']} {p['auto']} · {p['t']} · {len(p['i'])} image(s)")
+            print(f"[ESSAI, sans jeton] Je publierais : {p['d']} {p['auto']} · {p['t']} · {len(p['i'])} image(s) + story")
             continue
         existant = deja_en_ligne(p)
         if existant:
@@ -110,6 +127,11 @@ def main():
             ident = publier(p)
             print(f"Publié : {p['d']} · {p['t']} (id {ident})")
             pub[p["d"]] = {"t": p["t"], "id": ident, "le": maintenant.isoformat(), "par": "robot"}
+            json.dump(pub, open(chemin_pub, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+            st = publier_story(p)
+            if st:
+                print(f"Story publiée (id {st})")
+                pub[p["d"]]["story"] = st
         json.dump(pub, open(chemin_pub, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
