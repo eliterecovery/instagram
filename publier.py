@@ -67,11 +67,25 @@ def deja_en_ligne(post):
     return None
 
 
-def publier(post):
+LIEU = os.environ.get("IG_LOCATION_ID", "").strip()   # Page Facebook avec adresse (Prilly) : lieu affiché sur le post
+
+
+def publier(post, lieu=True):
+    """Publie le post ; si Instagram refuse le lieu, republie sans lieu."""
+    if lieu and LIEU:
+        try:
+            return _publier(post, LIEU)
+        except RuntimeError as e:
+            print("Lieu refusé, publication sans lieu :", str(e)[:200])
+    return _publier(post, "")
+
+
+def _publier(post, lieu):
+    extra = {"location_id": lieu} if lieu else {}
     legende = (post["l"].strip() + "\n\n" + post["g"].strip()).strip()
     noms = post["i"]
     if len(noms) == 1:
-        c = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(noms[0]), caption=legende)["id"]
+        c = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(noms[0]), caption=legende, **extra)["id"]
         attendre(c)
     else:
         enfants = []
@@ -79,7 +93,7 @@ def publier(post):
             e = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(n), is_carousel_item="true")["id"]
             attendre(e)
             enfants.append(e)
-        c = appel("POST", f"{IG}/media", media_type="CAROUSEL", children=",".join(enfants), caption=legende)["id"]
+        c = appel("POST", f"{IG}/media", media_type="CAROUSEL", children=",".join(enfants), caption=legende, **extra)["id"]
         attendre(c)
     return appel("POST", f"{IG}/media_publish", creation_id=c)["id"]
 
@@ -158,6 +172,11 @@ def verifier():
     print(f"Compte : @{moi.get('username')} · {moi.get('media_count')} publications")
     lim = appel("GET", f"{IG}/content_publishing_limit", fields="quota_usage,config")
     print("Quota de publication :", json.dumps(lim.get("data", lim))[:200])
+    if LIEU:
+        try:
+            print("Lieu :", json.dumps(appel("GET", LIEU, fields="name,location")))
+        except Exception as e:
+            print("Lieu illisible avec ce token (il sera quand même essayé à la publication) :", str(e)[:200])
     print("OK : le robot peut publier sur ce compte.")
 
 
