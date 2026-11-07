@@ -1,0 +1,49 @@
+name: Publier sur Instagram
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"      # toutes les 30 minutes : le script publie ce qui est prévu à l'heure passée
+    - cron: "7 6 * * 1"         # chaque lundi : prolonge le jeton Instagram de 60 jours
+  workflow_dispatch:            # bouton « Run workflow » pour lancer à la main
+
+concurrency:
+  group: instagram
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prolonger le jeton (le lundi)
+        id: jeton
+        if: github.event.schedule == '7 6 * * 1'
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+        run: python3 publier.py --rafraichir
+      - name: Enregistrer le nouveau jeton
+        if: steps.jeton.outputs.nouveau == 'oui'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::warning::Instagram a donné un nouveau jeton. Ajoute un secret GH_PAT pour qu'il soit enregistré tout seul."; exit 0; fi
+          gh secret set IG_TOKEN --repo "$GITHUB_REPOSITORY" < /tmp/nouveau_jeton
+      - name: Publier les posts du jour
+        if: github.event.schedule != '7 6 * * 1'
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_PAUSE: ${{ vars.IG_PAUSE }}
+        run: python3 publier.py
+      - name: Noter ce qui a été publié
+        run: |
+          if [ -n "$(git status --porcelain publies.json)" ]; then
+            git config user.name "Robot Elite Recovery"
+            git config user.email "robot@eliterecovery.ch"
+            git add publies.json
+            git commit -m "Publié sur Instagram"
+            git push
+          fi
