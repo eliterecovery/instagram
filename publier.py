@@ -67,7 +67,7 @@ def deja_en_ligne(post):
     return None
 
 
-LIEU = os.environ.get("IG_LOCATION_ID", "").strip()   # Page Facebook avec adresse (Prilly) : lieu affiché sur le post
+LIEU = os.environ.get("IG_LOCATION_ID", "").strip() or "1067322709806644"   # Page Facebook avec adresse (Prilly) : lieu affiché sur le post
 
 
 def publier(post, lieu=True):
