@@ -5,6 +5,10 @@ on:
     - cron: "*/30 * * * *"      # toutes les 30 minutes : le script publie ce qui est prévu à l'heure passée
     - cron: "7 6 * * 1"         # chaque lundi : prolonge le jeton Instagram de 60 jours
   workflow_dispatch:            # bouton « Run workflow » pour lancer à la main
+    inputs:
+      mode:
+        description: "verifier = tester la connexion sans publier ; publier = publier ce qui est prévu"
+        default: verifier
 
 concurrency:
   group: instagram
@@ -38,6 +42,7 @@ jobs:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_PAUSE: ${{ vars.IG_PAUSE }}
+          MODE: ${{ github.event.inputs.mode }}
         run: python3 publier.py
       - name: Noter ce qui a été publié
         run: |

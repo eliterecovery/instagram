@@ -128,8 +128,21 @@ def rafraichir():
         open("/tmp/nouveau_jeton", "w").write(nouveau)
 
 
+def verifier():
+    """Vérifie le jeton et le compte, sans rien publier."""
+    if not TOKEN:
+        print("ÉCHEC : le secret IG_TOKEN est vide."); sys.exit(1)
+    moi = appel("GET", IG, fields="username,name,media_count")
+    print(f"Compte : @{moi.get('username')} · {moi.get('media_count')} publications")
+    lim = appel("GET", f"{IG}/content_publishing_limit", fields="quota_usage,config")
+    print("Quota de publication :", json.dumps(lim.get("data", lim))[:200])
+    print("OK : le robot peut publier sur ce compte.")
+
+
 if __name__ == "__main__":
-    if "--rafraichir" in sys.argv:
+    if "--verifier" in sys.argv or os.environ.get("MODE") == "verifier":
+        verifier()
+    elif "--rafraichir" in sys.argv:
         rafraichir()
     else:
         main()
