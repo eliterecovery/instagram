@@ -129,7 +129,6 @@
 {
 "d": "2026-12-02",
 "t": "Auto-massage à la balle",
-"auto": "18:30",
 "l": "Pas besoin de matériel coûteux pour se masser entre deux séances : une balle de tennis fait très bien l'affaire. Une minute par zone, une pression supportable, et vous sentirez la différence dès le premier essai. Accessoire utile, à petit prix : une balle de tennis.\n\nMassothérapeute à Prilly · à domicile à Lausanne, sur La Côte et jusqu'à Genève.",
 "g": "#massage #sante #lausanne #geneve #suisse",
 "i": [
@@ -138,7 +137,8 @@
 "2026-12-01_Auto-massage-a-la-balle_3-5.jpg",
 "2026-12-01_Auto-massage-a-la-balle_4-5.jpg",
 "2026-12-01_Auto-massage-a-la-balle_5-5.jpg"
-]
+],
+"attente": "reserve"
 },
 {
 "d": "2026-12-03",
