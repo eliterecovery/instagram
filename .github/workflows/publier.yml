@@ -7,7 +7,7 @@ on:
   workflow_dispatch:            # bouton « Run workflow » pour lancer à la main
     inputs:
       mode:
-        description: "verifier = tester la connexion sans publier ; publier = publier ce qui est prévu"
+        description: "verifier = tester la connexion ; simulation = préparer le post du jour sans le publier ; publier = publier ce qui est prévu"
         default: verifier
 
 concurrency:

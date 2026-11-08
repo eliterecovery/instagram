@@ -188,8 +188,49 @@ def verifier():
     print("OK : le robot peut publier sur ce compte.")
 
 
+def simuler():
+    """08.11 : la répétition générale du post du jour : tout est préparé chez Instagram (images, légende, lieu, story),
+    SANS appuyer sur « publier ». Rien n'apparaît sur le compte ; les posts préparés expirent seuls en 24 h."""
+    cal = json.load(open(os.path.join(ICI, "calendrier.json"), encoding="utf-8"))
+    auj = datetime.datetime.now(TZ).date().isoformat()
+    p = next((x for x in cal if x.get("d") == auj and x.get("auto")), None) or next((x for x in cal if x.get("d", "") >= auj and x.get("auto")), None)
+    if not p:
+        print("Aucun post prévu."); return
+    legende = (p["l"].strip() + "\n\n" + p["g"].strip()).strip()
+    print(f"Post : {p['d']} à {p['auto']} · {p['t']} · {len(p['i'])} image(s) · {len(legende)} caractères · {p['g']}")
+    def conteneur(**k):
+        c = appel("POST", f"{IG}/media", **k)["id"]; attendre(c); return c
+    if len(p["i"]) == 1:
+        try:
+            conteneur(image_url=IMAGES + urllib.parse.quote(p["i"][0]), caption=legende, location_id=LIEU)
+            print("Image, légende et lieu (Prilly) : OK")
+        except Exception as e:
+            print("Lieu refusé (le post partira sans lieu) :", str(e)[:160])
+            conteneur(image_url=IMAGES + urllib.parse.quote(p["i"][0]), caption=legende)
+            print("Image et légende : OK")
+    else:
+        enfants = []
+        for n in p["i"][:10]:
+            enfants.append(conteneur(image_url=IMAGES + urllib.parse.quote(n), is_carousel_item="true"))
+            print("  image OK :", n)
+        try:
+            conteneur(media_type="CAROUSEL", children=",".join(enfants), caption=legende, location_id=LIEU)
+            print("Carrousel, légende et lieu (Prilly) : OK")
+        except Exception as e:
+            print("Lieu refusé (le post partira sans lieu) :", str(e)[:160])
+            conteneur(media_type="CAROUSEL", children=",".join(enfants), caption=legende)
+            print("Carrousel et légende : OK")
+    nom = f"{p['d']}_story.jpg"
+    if os.path.exists(os.path.join(ICI, "stories", nom)):
+        conteneur(image_url=STORIES + nom, media_type="STORIES")
+        print("Story : OK")
+    print("SIMULATION RÉUSSIE : tout est prêt, seul le bouton « publier » n'a pas été appuyé.")
+
+
 if __name__ == "__main__":
-    if "--verifier" in sys.argv or os.environ.get("MODE") == "verifier":
+    if os.environ.get("MODE") == "simulation" or "--simuler" in sys.argv:
+        simuler()
+    elif "--verifier" in sys.argv or os.environ.get("MODE") == "verifier":
         verifier()
     elif "--rafraichir" in sys.argv:
         rafraichir()
