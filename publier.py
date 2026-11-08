@@ -227,8 +227,22 @@ def simuler():
     print("SIMULATION RÉUSSIE : tout est prêt, seul le bouton « publier » n'a pas été appuyé.")
 
 
+def essai_reel():
+    """08.11 : un vrai post d'essai (image de la réserve, légende « Test »), à supprimer à la main juste après.
+    Il n'est pas noté dans publies.json : le planning n'est pas touché."""
+    cal = json.load(open(os.path.join(ICI, "calendrier.json"), encoding="utf-8"))
+    p = next((x for x in cal if x.get("attente") == "reserve"), None) or cal[-1]
+    c = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(p["i"][0]), caption="Test")["id"]
+    attendre(c)
+    ident = appel("POST", f"{IG}/media_publish", creation_id=c)["id"]
+    print(f"PUBLICATION RÉELLE RÉUSSIE (id {ident}) : supprime ce post « Test » dans Instagram.")
+
+
 if __name__ == "__main__":
-    if os.environ.get("MODE") == "simulation" or "--simuler" in sys.argv:
+    if os.environ.get("MODE") == "test":
+        simuler()
+        essai_reel()
+    elif os.environ.get("MODE") == "simulation" or "--simuler" in sys.argv:
         simuler()
     elif "--verifier" in sys.argv or os.environ.get("MODE") == "verifier":
         verifier()
