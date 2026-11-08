@@ -177,6 +177,14 @@ def verifier():
             print("Lieu :", json.dumps(appel("GET", LIEU, fields="name,location")))
         except Exception as e:
             print("Lieu illisible avec ce token (il sera quand même essayé à la publication) :", str(e)[:200])
+    # 08.11 : le vrai test d'écriture : préparer un post (conteneur) SANS le publier (rien n'apparaît sur le compte, il expire seul en 24 h)
+    try:
+        cal = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "calendrier.json")))
+        img = cal[0]["i"][0]
+        c = appel("POST", f"{IG}/media", image_url=IMAGES + urllib.parse.quote(img), caption="test")["id"]
+        print("Écriture OK : post préparé sans être publié (", c, ")")
+    except Exception as e:
+        print("ÉCHEC écriture : Instagram refuse de préparer un post :", str(e)[:300]); sys.exit(1)
     print("OK : le robot peut publier sur ce compte.")
 
 
