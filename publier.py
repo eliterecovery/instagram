@@ -146,6 +146,14 @@ def main():
             if st:
                 print(f"Story publiée (id {st})")
                 pub[p["d"]]["story"] = st
+            # 10.11 : la notification sur l'iPhone de Quentin (app Elite Recovery), à la seconde
+            try:
+                import notifier
+                notifier.envoyer("Publié sur Instagram",
+                                 f"« {p['t']} » vient d’être posté sur @eliterecovery.ch à {maintenant.strftime('%H:%M').replace(':', ' h ')}{', avec sa story' if st else ''}. Touche pour le voir.",
+                                 {"lien": "eliterecovery://onglet/social", "insta": f"{p['d']}|{ident}"})
+            except Exception as e:
+                print(f"Notification iPhone ignorée : {e}")
         json.dump(pub, open(chemin_pub, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
@@ -248,5 +256,9 @@ if __name__ == "__main__":
         verifier()
     elif "--rafraichir" in sys.argv:
         rafraichir()
+    elif os.environ.get("MODE") == "notifier":
+        import notifier
+        notifier.envoyer("Notifications du robot : OK", "C’est ainsi que tu seras prévenu à chaque post publié sur Instagram.",
+                         {"lien": "eliterecovery://onglet/social"})
     else:
         main()

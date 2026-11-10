@@ -7,7 +7,7 @@ on:
   workflow_dispatch:            # bouton « Run workflow » pour lancer à la main
     inputs:
       mode:
-        description: "verifier = tester la connexion ; simulation = préparer le post du jour sans le publier ; publier = publier ce qui est prévu"
+        description: "verifier = tester la connexion ; simulation = préparer le post du jour sans le publier ; publier = publier ce qui est prévu ; notifier = notification d'essai sur l'iPhone"
         default: verifier
 
 concurrency:
@@ -45,7 +45,12 @@ jobs:
           IG_STORY: ${{ vars.IG_STORY }}
           IG_LOCATION_ID: ${{ vars.IG_LOCATION_ID }}
           MODE: ${{ github.event.inputs.mode }}
-        run: python3 publier.py
+          APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APNS_IPHONE: ${{ secrets.APNS_IPHONE }}
+        run: |
+          python3 -c "import cryptography" 2>/dev/null || pip install -q cryptography
+          python3 publier.py
       - name: Noter ce qui a été publié
         run: |
           if [ -n "$(git status --porcelain publies.json)" ]; then
